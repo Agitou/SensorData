@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -23,6 +24,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Button btn1;
     boolean isPlaying = false, loopexit = true;
     private int pos = 0;
+    private final int SPEED_THRESHOLD = 500;
 
 
 
@@ -30,6 +32,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mp = MediaPlayer.create(this, R.raw.nextep);
 
         x = (TextView) findViewById(R.id.x);
         y = (TextView) findViewById(R.id.y);
@@ -66,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public void onSensorChanged(SensorEvent sensor){
         Sensor mySensor = sensor.sensor;
-        mp = MediaPlayer.create(this, R.raw.nextep);
 
         if(mySensor.getType() == Sensor.TYPE_ACCELEROMETER){
             float xn = sensor.values[0];
@@ -86,11 +89,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 float speed = Math.abs(xn + yn + zn - last_x - last_y - last_z)/ diffTime * 10000;
                 sped.setText(String.format("%d", Math.round(speed)));
 
-                if(speed > 800 && !mp.isPlaying()){
-                    while(speed > 800){
-                        
-                    }
+                if(speed > SPEED_THRESHOLD && isPlaying == false){
+                    mp.start();
+
+                    isPlaying = !isPlaying;
                 }
+
+
+
+                if(isPlaying == true && speed <= SPEED_THRESHOLD){
+                    mp.pause();
+                    Toast.makeText(this, String.valueOf(isPlaying), Toast.LENGTH_SHORT).show();
+                    isPlaying = !isPlaying;
+                }
+
+
 
                 last_x = xn;
                 last_y = yn;
@@ -117,6 +130,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST);
     }
 }
