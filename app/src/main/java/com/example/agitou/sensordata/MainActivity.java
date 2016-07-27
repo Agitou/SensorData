@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Button btn1;
     boolean isPlaying = false, loopexit = true;
     private int pos = 0;
+    private long start, elapsed_time;
     private final int SPEED_THRESHOLD = 500;
 
 
@@ -91,17 +92,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 if(speed > SPEED_THRESHOLD && isPlaying == false){
                     mp.start();
-
                     isPlaying = !isPlaying;
+                    start = System.nanoTime();
                 }
 
 
 
                 if(isPlaying == true && speed <= SPEED_THRESHOLD){
-                    mp.pause();
-                    Toast.makeText(this, String.valueOf(isPlaying), Toast.LENGTH_SHORT).show();
-                    isPlaying = !isPlaying;
+                    elapsed_time = System.nanoTime() - start;
+                    if(elapsed_time > 7) {
+                        mp.pause();
+                        Toast.makeText(this, String.valueOf(isPlaying), Toast.LENGTH_SHORT).show();
+                        isPlaying = !isPlaying;
+                    }
                 }
+
 
 
                 last_x = xn;
