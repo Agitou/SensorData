@@ -8,10 +8,10 @@ import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -22,10 +22,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float last_x, last_y, last_z;
     private MediaPlayer mp, mp2;
     private Button btn1;
-    boolean isPlaying = false, loopexit = true;
-    private int pos = 0;
-    private long start, elapsed_time;
-    private final int SPEED_THRESHOLD = 500;
+    boolean isPlaying = false, flag = false;
+    private int SPEED_THRESHOLD = 300;
+    private double bpm, bpmmin = 0, bpmmax = 10;
+
+
+    private float s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0;
+    private float c1 = 0.05237f, c2 = 0.06725f, c3 = 0.06725f, c4 = 0.05237f;
 
 
 
@@ -34,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mp = MediaPlayer.create(this, R.raw.nextep);
+        mp = MediaPlayer.create(this, R.raw.bonk);
 
         x = (TextView) findViewById(R.id.x);
         y = (TextView) findViewById(R.id.y);
@@ -46,12 +49,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sped = (TextView) findViewById(R.id.sped);
 
         btn1 = (Button) findViewById(R.id.btn1);
-        mp2 = MediaPlayer.create(this, R.raw.perc);
         btn1.setOnClickListener(new View.OnClickListener() {
 
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                if(isPlaying){
+                mp.seekTo(50000);
+                /*if(isPlaying){
                     mp2.pause();
                     mp2.setLooping(false);
                 }
@@ -60,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     mp2.setLooping(true);
                 }
                 isPlaying = !isPlaying;
+                */
             }
         });
 
@@ -79,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             long curTime = System.currentTimeMillis();
 
             //if ((curTime - lastUpdate) > 10)
-            if ((curTime - lastUpdate) > 100) {
+            if ((curTime - lastUpdate) > 50) {
                 long diffTime = (curTime - lastUpdate);
                 lastUpdate = curTime;
 
@@ -87,31 +91,65 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 ydata.setText(String.format("%d", Math.round(yn)));
                 zdata.setText(String.format("%d", Math.round(zn)));
 
-                float speed = Math.abs(xn + yn + zn - last_x - last_y - last_z)/ diffTime * 10000;
-                sped.setText(String.format("%d", Math.round(speed)));
+                float s1 = Math.abs(xn + yn + zn - last_x - last_y - last_z)/ diffTime * 10000;
 
-                if(speed > SPEED_THRESHOLD && isPlaying == false){
-                    mp.start();
-                    isPlaying = !isPlaying;
-                    start = System.nanoTime();
+                float speed = s1 * c1 + s2 * c2 + s3 * c3 + s4 * c4;
+
+                float sCon = (float) Math.sqrt(xn * xn + yn * yn + (zn - 10) * (zn - 10) ) * (diffTime / 1000f);
+
+                sped.setText(String.format("%d", Math.round(speed)));
+                Log.i("Speed:", String.format("%.2f", speed));
+                //Log.i("Time:", )
+
+                bpm = (float) sCon;
+                Log.i("bpm", String.valueOf(bpm));
+                if(mp.getCurrentPosition() >= 0 && mp.getCurrentPosition() <= 30 * 1000) {
+                    SPEED_THRESHOLD = 200;
+                    bpmmin = 3;
+                    bpmmax = 6;
                 }
 
+                if(mp.getCurrentPosition() > 30 * 1000 && mp.getCurrentPosition() <= 58 * 1000 ){
+                    SPEED_THRESHOLD = 300;
+                    bpmmin = 8;
+                    bpmmax = 15;
 
+                }
 
-                if(isPlaying == true && speed <= SPEED_THRESHOLD){
-                    elapsed_time = System.nanoTime() - start;
-                    if(elapsed_time > 7) {
-                        mp.pause();
-                        Toast.makeText(this, String.valueOf(isPlaying), Toast.LENGTH_SHORT).show();
+                if(mp.getCurrentPosition() >= 59 * 1000){
+                    SPEED_THRESHOLD = 310;
+                    bpmmin = 13;
+                    bpmmax = 200;
+
+                }
+
+                if (speed > SPEED_THRESHOLD && isPlaying == false) {
+                    if(flag){
+                        if(bpm >= bpmmin && bpm <= bpmmax){
+                            mp.start();
+                            isPlaying = !isPlaying;
+                        }
+                    }else {
+                        mp.start();
                         isPlaying = !isPlaying;
+                        flag = true;
                     }
                 }
 
 
+                if (isPlaying == true && (s1 <= 150 || s2 <= 150)) {
+                    //if(elapsed_time > 20) {
+                    mp.pause();
+                    isPlaying = !isPlaying;
+                    //}
+                }
 
                 last_x = xn;
                 last_y = yn;
                 last_z = zn;
+                s4 = s3;
+                s3 = s2;
+                s2 = s1;
             }
             /*
             xdata.setText(String.format("%.2f", xn));
